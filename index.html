@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기본 도법 작도 트레이너 — 자와 컴퍼스로 그리기</title>
+<style>
+  :root{
+    --bg:#0b2540; --panel:#123459; --panel-light:#1c4474;
+    --text:#eaf4ff; --text-dim:#9fc1e0; --accent:#ffb454;
+    --correct:#5fd86f; --wrong:#ff6b6b; --grid:rgba(234,244,255,0.06);
+    --paper:#f4efe0; --ink:#1c3247; --link:#5bc8de;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);min-height:100vh;padding:18px 14px 70px;
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif;
+    background:linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
+               linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--bg);}
+  .wrap{max-width:860px;margin:0 auto}
+  .eyebrow{font-size:.74rem;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .subtitle{color:var(--text-dim);font-size:.94rem;margin-bottom:16px;line-height:1.55}
+  .panel{background:var(--panel);border:1px solid rgba(234,244,255,.12);border-radius:14px;padding:20px;margin-bottom:16px}
+  .tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+  .tab{flex:1 1 128px;background:transparent;border:1px solid rgba(234,244,255,.22);color:var(--text-dim);
+       padding:11px 8px;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:inherit}
+  .tab:hover{border-color:var(--accent);color:var(--text)}
+  .tab[aria-pressed="true"]{background:var(--accent);color:#1a1306;border-color:var(--accent)}
+  .tab .done{color:var(--correct);font-size:.8rem}
+  .tab[aria-pressed="true"] .done{color:#1a6b28}
+
+  .guide{background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.35);border-radius:10px;
+         padding:11px 14px;font-size:.87rem;color:var(--text-dim);line-height:1.6;margin-bottom:14px}
+  .guide b{color:var(--accent)}
+
+  .paperwrap{background:var(--paper);border-radius:12px;padding:8px;position:relative}
+  canvas{display:block;width:100%;touch-action:manipulation}
+  #consCv{height:290px} #qCv{height:270px}
+  @media(max-width:560px){#consCv{height:250px} #qCv{height:235px}}
+
+  .row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#0f2032;
+       border:1px solid rgba(234,244,255,.14);border-radius:10px;padding:9px 11px;margin-bottom:12px}
+  .row .lab{font-size:.72rem;color:var(--text-dim);letter-spacing:.08em;flex:none}
+  .seg{display:flex;gap:5px;flex-wrap:wrap}
+  .segBtn{background:transparent;border:1px solid rgba(234,244,255,.24);color:var(--text);padding:9px 12px;
+          border-radius:7px;cursor:pointer;font-weight:700;font-size:.8rem;font-family:inherit}
+  .segBtn:hover{border-color:var(--link)}
+  .segBtn[aria-pressed="true"]{background:var(--link);color:#04121c;border-color:var(--link)}
+  .segBtn .ok{color:var(--correct)}
+
+  .btn{border:none;border-radius:10px;background:var(--accent);color:#1a1306;font-weight:800;
+       font-size:.95rem;padding:13px 20px;cursor:pointer;min-height:50px;font-family:inherit}
+  .btn.ghost{background:transparent;border:1px solid rgba(234,244,255,.3);color:var(--text)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btnrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+
+  .steps{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
+  .stepChip{background:#0f2032;border:1px solid rgba(234,244,255,.2);color:var(--text-dim);
+            border-radius:20px;padding:6px 13px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit}
+  .stepChip.on{background:var(--accent);color:#1a1306;border-color:var(--accent)}
+  .stepChip.past{border-color:var(--link);color:var(--link)}
+  .steptext{background:rgba(91,200,222,.09);border-left:3px solid var(--link);border-radius:0 8px 8px 0;
+            padding:12px 14px;margin-top:10px;font-size:.92rem;color:var(--text);line-height:1.65;min-height:52px}
+  .steptext b{color:var(--accent)}
+  .why{font-size:.85rem;color:var(--text-dim);line-height:1.65;margin-top:10px}
+  .why b{color:var(--link)}
+
+  .prompt{font-size:1.02rem;margin:14px 0 11px;line-height:1.55}
+  .prompt b{color:var(--accent)}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .choices.one{grid-template-columns:1fr}
+  .choice{background:var(--paper);border:3px solid transparent;border-radius:11px;padding:12px 10px;
+          cursor:pointer;display:flex;align-items:flex-start;gap:8px;font-family:inherit;text-align:left;min-height:56px}
+  .choice .num{font-size:.8rem;font-weight:800;color:#5b7286;flex:none;line-height:1.4}
+  .choice .tx{font-weight:800;color:#1c3247;font-size:.93rem;line-height:1.45}
+  .choice:hover:not(:disabled){border-color:var(--link)}
+  .choice.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,180,84,.3)}
+  .choice.correct{border-color:var(--correct);background:#e3f5ec}
+  .choice.wrong{border-color:var(--wrong);background:#fbecea}
+  .choice:disabled{cursor:default}
+  .hint{font-size:.83rem;color:var(--text-dim);margin-top:8px}
+
+  .scorebar{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:var(--text-dim);margin-top:13px}
+  .scorebar b{color:var(--text)}
+  .pill{background:var(--panel-light);border-radius:20px;padding:4px 13px;font-size:.82rem;color:var(--accent);font-weight:800}
+  .toast{font-size:.93rem;font-weight:700;min-height:22px;margin-top:10px;line-height:1.5}
+  .toast.ok{color:var(--correct)} .toast.no{color:var(--wrong)} .toast.go{color:var(--accent)}
+  .explain{background:rgba(91,200,222,.09);border-left:3px solid var(--link);border-radius:0 8px 8px 0;
+           padding:11px 13px;margin-top:11px;font-size:.87rem;color:var(--text-dim);line-height:1.65}
+  .explain b{color:var(--link)}
+  .hidden{display:none !important}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .links a{color:var(--link);text-decoration:none;font-size:.83rem;border:1px solid rgba(91,200,222,.4);padding:7px 12px;border-radius:8px}
+  .links a:hover{background:rgba(91,200,222,.12)}
+  footer{max-width:860px;margin:14px auto 0;color:var(--text-dim);font-size:.8rem;line-height:1.6;text-align:center}
+  @media(max-width:560px){
+    body{padding:14px 10px 60px} .panel{padding:15px}
+    .choices{grid-template-columns:1fr} .prompt{font-size:.97rem}
+    .segBtn{padding:11px 12px;font-size:.82rem} .tab{padding:12px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Geometric Construction · 기본 도법</div>
+  <h1>기본 도법 작도 트레이너</h1>
+  <p class="subtitle">자와 컴퍼스만으로 그리는 <b>평면 도형 작도</b>입니다. 눈금으로 재지 않고 <b>원호의 교점</b>으로 정확한 점을 찾아냅니다. 8가지를 단계별로 보고, 직접 컴퍼스를 놓아 봅니다.</p>
+
+  <div class="tabs" role="group" aria-label="모드 선택">
+    <button class="tab" id="tabLearn" aria-pressed="true">📖 배우기 <span class="done hidden" id="dLearn">✓</span></button>
+    <button class="tab" id="tabCompass" aria-pressed="false">도전 ① 컴퍼스 놓기</button>
+    <button class="tab" id="tabOrder" aria-pressed="false">도전 ② 다음 단계</button>
+    <button class="tab" id="tabName" aria-pressed="false">도전 ③ 무슨 작도?</button>
+    <button class="tab" id="tabExam" aria-pressed="false">🎯 종합시험</button>
+  </div>
+
+  <section id="secLearn">
+    <div class="guide">처음이라면 <b>📖 배우기</b>부터. <b>맞힐 필요가 없습니다</b> — 단계 버튼(❶❷❸)을 눌러 선이 하나씩 늘어나는 것만 보면 됩니다. <b>▶ 자동으로 그리기</b>를 누르면 알아서 그려집니다.</div>
+    <div class="panel">
+      <div class="row">
+        <span class="lab">작도</span>
+        <div class="seg" id="consSeg"></div>
+      </div>
+      <div class="paperwrap"><canvas id="consCv"></canvas></div>
+      <div class="steps" id="stepChips"></div>
+      <div class="steptext" id="stepText"></div>
+      <div class="btnrow">
+        <button class="btn ghost" id="btnBack">← 이전 단계</button>
+        <button class="btn" id="btnFwd">다음 단계 →</button>
+        <button class="btn ghost" id="btnAuto">▶ 자동으로 그리기</button>
+      </div>
+      <div class="why" id="consWhy"></div>
+    </div>
+  </section>
+
+  <section id="secQuiz" class="hidden">
+    <div class="panel">
+      <div class="prompt" id="qPrompt"></div>
+      <div class="paperwrap"><canvas id="qCv"></canvas></div>
+      <div class="hint hidden" id="qHint">그림에서 <b>파란 점</b> 하나를 눌러 고른 뒤 <b>제출</b>을 누르세요.</div>
+      <div class="choices" id="qChoices" style="margin-top:14px"></div>
+      <div class="btnrow">
+        <button class="btn" id="btnSubmit" disabled>제출</button>
+        <button class="btn ghost hidden" id="btnNext">다음 문제 →</button>
+        <button class="btn ghost" id="btnRestart">처음부터</button>
+      </div>
+      <div class="scorebar">
+        <span>문제 <b id="qRound">1</b> / <b id="qTotal">8</b></span>
+        <span>맞은 개수 <b id="qScore">0</b></span>
+        <span class="pill" id="qCombo">연속 0</span>
+      </div>
+      <div class="toast go" id="qToast">보기를 고른 뒤 <b>제출</b>을 누르세요.</div>
+      <div class="explain hidden" id="qExplain"></div>
+    </div>
+  </section>
+
+  <div class="panel" style="padding:16px 20px">
+    <div style="font-size:.84rem;color:var(--text-dim);margin-bottom:8px">🔗 같은 단원의 다른 도구</div>
+    <div class="links">
+      <a href="https://hongyul67-cpu.github.io/paper-scale-master/" target="_blank" rel="noopener">도면 양식·척도 마스터</a>
+      <a href="https://hongyul67-cpu.github.io/tusang-master/" target="_blank" rel="noopener">투상도 마스터</a>
+      <a href="https://hongyul67-cpu.github.io/jeongaedo-master/" target="_blank" rel="noopener">전개도 마스터</a>
+      <a href="https://hongyul67-cpu.github.io/domyeon-master/" target="_blank" rel="noopener">도면읽기 마스터</a>
+    </div>
+  </div>
+</div>
+<footer>기초제도 Ⅲ. 제도의 기본 도법 — 1. 평면 도형 그리기<br>제작: hong · 기계 계열 특성화고 수업 보조 도구</footer>
+
+<script src="https://hongyul67-cpu.github.io/links/collector.js" data-tool="기본 도법 작도"></script>
+<script src="https://hongyul67-cpu.github.io/links/fx.js"></script>
+<script>
+(function(){
+"use strict";
+const el=id=>document.getElementById(id);
+const rnd=n=>Math.floor(Math.random()*n), pick=a=>a[rnd(a.length)];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+const has=n=>typeof FX!=="undefined" && typeof FX[n]==="function";
+const fxRight=e=>{ if(has("burst")) FX.burst(e); if(has("punch")) FX.punch(e); };
+const fxWrong =e=>{ if(has("shake")) FX.shake(e); if(has("flash")) FX.flash(); };
+const fxBanner=o=>{ if(has("banner")) FX.banner(o); };
+const fxStars =m=>has("starsFor")?FX.starsFor(m):3;
+
+/* ================= 기하 계산 ================= */
+const VW=400, VH=250;                                   // 가상 좌표계
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+const ang=(c,p)=>Math.atan2(p[1]-c[1],p[0]-c[0]);
+const ptAt=(c,r,a)=>[c[0]+r*Math.cos(a), c[1]+r*Math.sin(a)];
+const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];
+// 원 ∩ 원
+function cci(c1,r1,c2,r2){
+  const d=dist(c1,c2); if(d>r1+r2||d<Math.abs(r1-r2)||d===0) return [];
+  const a=(r1*r1-r2*r2+d*d)/(2*d), h2=r1*r1-a*a; if(h2<0) return [];
+  const h=Math.sqrt(h2), p=lerp(c1,c2,a/d), ux=(c2[0]-c1[0])/d, uy=(c2[1]-c1[1])/d;
+  return [[p[0]-uy*h,p[1]+ux*h],[p[0]+uy*h,p[1]-ux*h]];
+}
+// 직선(p1,p2) ∩ 원(c,r)
+function cli(p1,p2,c,r){
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const A=dx*dx+dy*dy, B=2*(dx*(p1[0]-c[0])+dy*(p1[1]-c[1]));
+  const C=(p1[0]-c[0])**2+(p1[1]-c[1])**2-r*r, D=B*B-4*A*C;
+  if(D<0) return [];
+  const s=Math.sqrt(D);
+  return [(-B-s)/(2*A),(-B+s)/(2*A)].map(t=>[p1[0]+dx*t,p1[1]+dy*t]);
+}
+// 직선 ∩ 직선
+function lli(p1,p2,p3,p4){
+  const d=(p1[0]-p2[0])*(p3[1]-p4[1])-(p1[1]-p2[1])*(p3[0]-p4[0]);
+  if(Math.abs(d)<1e-9) return null;
+  const a=p1[0]*p2[1]-p1[1]*p2[0], b=p3[0]*p4[1]-p3[1]*p4[0];
+  return [(a*(p3[0]-p4[0])-(p1[0]-p2[0])*b)/d, (a*(p3[1]-p4[1])-(p1[1]-p2[1])*b)/d];
+}
+const far=(list,from)=>list.slice().sort((a,b)=>dist(b,from)-dist(a,from))[0];
+const near=(list,from)=>list.slice().sort((a,b)=>dist(a,from)-dist(b,from))[0];
+// 두 점을 감싸는 원호 구간
+function arcSpan(c,r,p1,p2,pad){
+  pad=pad==null?0.35:pad;
+  let a1=ang(c,p1), a2=ang(c,p2);
+  let d=a2-a1; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+  return d>=0 ? {c,r,a0:a1-pad,a1:a2+pad} : {c,r,a0:a2-pad,a1:a1+pad};
+}
+
+/* ================= 작도 정의 ================= */
+// prim: L 선분 / A 원호 / C 원 / P 점 / D 점선
+const L=(a,b,st)=>({k:"L",a,b,st:st||"aux"});
+const A_=(o,st)=>({k:"A",c:o.c,r:o.r,a0:o.a0,a1:o.a1,st:st||"aux"});
+const C_=(c,r,st)=>({k:"C",c,r,st:st||"aux"});
+const Pt=(p,lab,st)=>({k:"P",p,lab,st:st||"pt"});
+
+const CONS={};
+
+CONS.bisect=(()=>{
+  const A=[70,115], B=[310,115], R=140;
+  const I=cci(A,R,B,R), C=I[0][1]<I[1][1]?I[0]:I[1], D=I[0][1]<I[1][1]?I[1]:I[0];
+  const M=mid(A,B);
+  return {name:"선분의 수직 2등분", short:"선분 2등분",
+    why:"<b>왜 되나?</b> A와 B에서 <b>같은 반지름</b>으로 그렸으니 교점 C·D는 A에서도 B에서도 거리가 같습니다. 그런 점들만 모아 놓은 선이 곧 <b>수직 이등분선</b>입니다. 반지름은 반드시 <b>선분 길이의 절반보다 크게</b> 잡아야 원호가 만납니다.",
+    pts:{A,B,C,D,M},
+    steps:[
+      {t:"주어진 <b>선분 AB</b>입니다. 자로 재지 않고 정확히 반으로 나눠 봅시다.",
+       d:[L(A,B,"given"),Pt(A,"A","given"),Pt(B,"B","given")]},
+      {t:"<b>점 A</b>에 컴퍼스 바늘을 꽂고, <b>선분 절반보다 큰 반지름</b>으로 원호를 그립니다.",
+       d:[A_(arcSpan(A,R,C,D),"act")]},
+      {t:"<b>점 B</b>에서 <b>똑같은 반지름</b>으로 원호를 그립니다. 두 원호가 만난 점이 <b>C, D</b>입니다.",
+       d:[A_(arcSpan(B,R,C,D),"act"),Pt(C,"C"),Pt(D,"D")], ask:"B", cands:["A","B","M"],
+       qt:"한쪽 끝점에서 원호를 이미 그렸습니다. <b>같은 반지름으로 두 번째 원호</b>를 그리려면 컴퍼스 바늘을 어디에 꽂아야 할까요?"},
+      {t:"<b>C와 D를 직선으로</b> 이으면 AB의 <b>수직 이등분선</b>. AB와 만나는 점 <b>M</b>이 2등분점입니다.",
+       d:[L(C,D,"res"),Pt(M,"M","res")]}
+    ]};
+})();
+
+CONS.perp=(()=>{
+  const L1=[50,165], L2=[350,165], P=[200,55], R1=140, R2=100;
+  const X=cli(L1,L2,P,R1), a=X[0][0]<X[1][0]?X[0]:X[1], b=X[0][0]<X[1][0]?X[1]:X[0];
+  const Q=far(cci(a,R2,b,R2),P);
+  const F=lli(P,Q,L1,L2);
+  return {name:"직선 밖의 점에서 수선 긋기", short:"수선 긋기",
+    why:"<b>왜 되나?</b> P는 A·B에서 같은 거리, Q도 A·B에서 같은 거리입니다. 두 점 모두 AB의 <b>수직 이등분선 위</b>에 있으므로 P와 Q를 이으면 직선과 <b>직각</b>이 됩니다.",
+    pts:{P,A:a,B:b,Q,F},
+    steps:[
+      {t:"주어진 <b>직선</b>과 그 밖의 <b>점 P</b>입니다. P에서 직선에 수직인 선을 내려 봅시다.",
+       d:[L(L1,L2,"given"),Pt(P,"P","given")]},
+      {t:"<b>점 P</b>에 컴퍼스를 꽂고 직선과 <b>두 군데서 만나도록</b> 원호를 그립니다 → 점 A, B",
+       d:[A_(arcSpan(P,R1,a,b,0.3),"act"),Pt(a,"A"),Pt(b,"B")], ask:"P", cands:["P","A","B"],
+       qt:"직선 밖의 한 점에서 직선에 <b>수선</b>을 내리려 합니다. <b>직선과 두 곳에서 만나는 원호</b>를 그리려면 컴퍼스 바늘을 어디에 꽂을까요?"},
+      {t:"<b>점 A</b>에서 AB의 절반보다 큰 반지름으로 원호를 그립니다.",
+       d:[A_(arcSpan(a,R2,Q,Q,0.55),"act")]},
+      {t:"<b>점 B</b>에서 <b>같은 반지름</b>으로 원호를 그려 만나는 점이 <b>Q</b>입니다.",
+       d:[A_(arcSpan(b,R2,Q,Q,0.55),"act"),Pt(Q,"Q")], ask:"B", cands:["P","A","B","F"],
+       qt:"직선 위의 두 점 중 <b>한 곳에서만</b> 원호를 그린 상태입니다. <b>같은 반지름으로 나머지 원호</b>를 그릴 자리는?"},
+      {t:"<b>P와 Q를 이으면</b> 직선에 대한 <b>수선</b>입니다. 만나는 점 F가 수선의 발입니다.",
+       d:[L(P,Q,"res"),Pt(F,"F","res")]}
+    ]};
+})();
+
+CONS.divide=(()=>{
+  const A=[60,190], B=[340,190], n=5, sp=44, th=-32*Math.PI/180;
+  const ray=ptAt(A,sp*n+30,th), Ps=[];
+  for(let i=1;i<=n;i++) Ps.push(ptAt(A,sp*i,th));
+  const C=Ps[n-1];
+  const dv=Ps.slice(0,n-1).map(p=>lli(p,[p[0]+(B[0]-C[0]),p[1]+(B[1]-C[1])],A,B));
+  const pts={A,B,C}; Ps.forEach((p,i)=>pts["P"+(i+1)]=p);
+  return {name:"선분을 n등분하기 (5등분)", short:"선분 n등분",
+    why:"<b>왜 되나?</b> 평행선은 두 직선을 <b>같은 비로</b> 자릅니다(평행선 비례). 그래서 보조선 AC를 똑같은 간격으로 나눈 뒤 평행선을 내리면 AB도 똑같은 간격으로 나뉩니다. 자로 <b>÷5 계산을 하지 않아도</b> 됩니다.",
+    pts,
+    steps:[
+      {t:"주어진 <b>선분 AB</b>를 <b>5등분</b>해 봅시다. 길이를 5로 나누면 소수가 나와 정확히 못 잽니다.",
+       d:[L(A,B,"given"),Pt(A,"A","given"),Pt(B,"B","given")]},
+      {t:"점 A에서 <b>아무 각도로 보조 직선</b>을 하나 긋습니다. 각도는 상관없습니다.",
+       d:[L(A,ray,"aux")]},
+      {t:"보조선 위에 <b>같은 간격</b>으로 5개의 점을 찍습니다(디바이더). 간격의 길이도 아무거나 됩니다.",
+       d:Ps.map((p,i)=>Pt(p,"P"+(i+1))).concat([L(A,ray,"aux")])},
+      {t:"<b>마지막 점 P5(=C)와 B</b>를 잇습니다.",
+       d:[L(C,B,"act")]},
+      {t:"나머지 점 P1~P4에서 <b>CB와 평행하게</b> 선을 그으면 AB가 <b>5등분</b>됩니다.",
+       d:Ps.slice(0,n-1).map((p,i)=>L(p,dv[i],"res")).concat(dv.map(p=>Pt(p,"","res")))}
+    ]};
+})();
+
+CONS.angle=(()=>{
+  const O=[80,205], R=150, R2=110;
+  const e1=[350,205], e2=ptAt(O,265,-50*Math.PI/180);
+  const C=ptAt(O,R,0), D=ptAt(O,R,-50*Math.PI/180);
+  const E=far(cci(C,R2,D,R2),O);
+  return {name:"각의 2등분", short:"각 2등분",
+    why:"<b>왜 되나?</b> C와 D는 꼭짓점 O에서 <b>같은 거리</b>, E는 C와 D에서 <b>같은 거리</b>입니다. 그래서 삼각형 OCE와 ODE가 합동이 되고 ∠COE = ∠DOE, 즉 각이 정확히 <b>반</b>으로 갈립니다.",
+    pts:{O,C,D,E},
+    steps:[
+      {t:"주어진 <b>각</b>입니다. 각도기 없이 정확히 반으로 나눠 봅시다.",
+       d:[L(O,e1,"given"),L(O,e2,"given"),Pt(O,"O","given")]},
+      {t:"<b>꼭짓점 O</b>에 컴퍼스를 꽂고 원호를 그려 두 변과 만나는 점 <b>C, D</b>를 찾습니다.",
+       d:[A_(arcSpan(O,R,C,D,0.25),"act"),Pt(C,"C"),Pt(D,"D")], ask:"O", cands:["O","C","D"],
+       qt:"각을 <b>2등분</b>하려 합니다. 가장 먼저 <b>두 변과 만나는 원호</b>를 그리려면 컴퍼스 바늘을 어디에 꽂을까요?"},
+      {t:"<b>점 C</b>에서 적당한 반지름으로 원호를 그립니다.",
+       d:[A_(arcSpan(C,R2,E,E,0.5),"act")]},
+      {t:"<b>점 D</b>에서 <b>같은 반지름</b>으로 원호를 그려 만나는 점이 <b>E</b>입니다.",
+       d:[A_(arcSpan(D,R2,E,E,0.5),"act"),Pt(E,"E")], ask:"D", cands:["O","C","D","E"],
+       qt:"한쪽 변 위의 점에서 원호를 그렸습니다. <b>교점을 만들 나머지 원호</b>의 중심으로 삼을 점은?"},
+      {t:"<b>O와 E를 이으면</b> 각의 <b>2등분선</b>입니다.",
+       d:[L(O,ptAt(O,dist(O,E)+35,ang(O,E)),"res")]}
+    ]};
+})();
+
+CONS.trisect=(()=>{
+  const O=[90,215], R=150;
+  const eA=[340,215], eB=[90,45];
+  const C=ptAt(O,R,0), D=ptAt(O,R,-Math.PI/2);
+  const E=ptAt(O,R,-Math.PI/3), F=ptAt(O,R,-Math.PI/6);
+  return {name:"직각의 3등분", short:"직각 3등분",
+    why:"<b>왜 되나?</b> 원 위에서 <b>반지름과 같은 길이의 현</b>은 항상 중심각 <b>60°</b>를 만듭니다(정삼각형). 그래서 C에서 반지름만큼 재면 60°, D에서 재면 30° 자리가 나와 90°가 <b>30°씩 셋</b>으로 나뉩니다. 일반각은 자·컴퍼스로 3등분할 수 없지만 <b>직각은 됩니다.</b>",
+    pts:{O,C,D,E,F},
+    steps:[
+      {t:"주어진 <b>직각 ∠AOB</b>입니다. 30°씩 셋으로 나눠 봅시다.",
+       d:[L(O,eA,"given"),L(O,eB,"given"),Pt(O,"O","given")]},
+      {t:"<b>점 O</b>에서 임의의 반지름으로 원호를 그려 두 변과 만나는 <b>C, D</b>를 찾습니다.",
+       d:[A_(arcSpan(O,R,C,D,0.2),"act"),Pt(C,"C"),Pt(D,"D")], ask:"O", cands:["O","C","D"],
+       qt:"직각을 <b>3등분</b>하려 합니다. 가장 먼저 그릴 원호의 중심으로 삼을 점은?"},
+      {t:"<b>점 C</b>에서 <b>같은 반지름(OC)</b>으로 원호를 그려 원호 CD와 만나는 점 <b>E</b>를 찾습니다.",
+       d:[A_(arcSpan(C,R,E,E,0.45),"act"),Pt(E,"E")]},
+      {t:"<b>점 D</b>에서도 <b>같은 반지름</b>으로 원호를 그려 점 <b>F</b>를 찾습니다.",
+       d:[A_(arcSpan(D,R,F,F,0.45),"act"),Pt(F,"F")], ask:"D", cands:["O","C","D","E"],
+       qt:"두 변 위의 점 중 <b>한 곳에서만</b> 반지름 길이로 원호를 그렸습니다. <b>나머지 한 곳</b>에서도 같은 작업을 하려면 어디에 꽂을까요?"},
+      {t:"<b>OE, OF</b>를 그으면 직각이 <b>30°씩 3등분</b>됩니다.",
+       d:[L(O,ptAt(O,R+30,-Math.PI/3),"res"),L(O,ptAt(O,R+30,-Math.PI/6),"res")]}
+    ]};
+})();
+
+CONS.hexagon=(()=>{
+  const O=[200,122], r=100;
+  const A=ptAt(O,r,0), B=ptAt(O,r,Math.PI);
+  const V=[0,1,2,3,4,5].map(i=>ptAt(O,r,i*Math.PI/3));
+  const fromA=[V[1],V[5]], fromB=[V[2],V[4]];
+  return {name:"원에 내접하는 정육각형", short:"정육각형",
+    why:"<b>왜 되나?</b> 정육각형은 <b>한 변의 길이 = 반지름</b>입니다. 그래서 컴퍼스를 반지름 그대로 둔 채 원둘레를 찍어 나가면 정확히 여섯 번에 제자리로 돌아옵니다. 도면에서 <b>육각 볼트머리·너트</b>를 그릴 때 그대로 씁니다.",
+    pts:{O,A,B},
+    steps:[
+      {t:"주어진 <b>원</b>과 <b>지름 AB</b>입니다. 컴퍼스 벌림을 <b>반지름 그대로</b> 두는 것이 핵심입니다.",
+       d:[C_(O,r,"given"),L(A,B,"given"),Pt(A,"A","given"),Pt(B,"B","given"),Pt(O,"O","given")]},
+      {t:"<b>점 A</b>에 컴퍼스를 꽂고 <b>반지름과 같은 길이</b>로 원호를 그려 원과 만나는 두 점을 찍습니다.",
+       d:[A_(arcSpan(A,r,fromA[0],fromA[1],0.15),"act"),Pt(fromA[0],""),Pt(fromA[1],"")]},
+      {t:"<b>점 B</b>에서도 <b>같은 반지름</b>으로 원호를 그려 두 점을 더 찍습니다. 이제 원 위에 6점입니다.",
+       d:[A_(arcSpan(B,r,fromB[0],fromB[1],0.15),"act"),Pt(fromB[0],""),Pt(fromB[1],"")], ask:"B", cands:["O","A","B"],
+       qt:"지름의 <b>한쪽 끝</b>에서 반지름 길이로 원호를 그려 두 점을 찍었습니다. <b>나머지 두 점</b>을 찍으려면 어디에 꽂을까요?"},
+      {t:"여섯 점을 차례로 이으면 <b>원에 내접하는 정육각형</b>입니다.",
+       d:V.map((p,i)=>L(p,V[(i+1)%6],"res"))}
+    ]};
+})();
+
+CONS.circum=(()=>{
+  const A=[75,185], B=[325,200], C=[190,50];
+  const mAB=mid(A,B), mBC=mid(B,C);
+  const perp=(p,q)=>{const m=mid(p,q), d=[-(q[1]-p[1]),q[0]-p[0]], l=Math.hypot(d[0],d[1]);
+    return [[m[0]-d[0]/l*130,m[1]-d[1]/l*130],[m[0]+d[0]/l*130,m[1]+d[1]/l*130]];};
+  const b1=perp(A,B), b2=perp(B,C);
+  const O=lli(b1[0],b1[1],b2[0],b2[1]), R=dist(O,A);
+  return {name:"세 점을 지나는 원 (외접원)", short:"세 점을 지나는 원",
+    why:"<b>왜 되나?</b> 원의 중심은 세 점에서 <b>거리가 같은 점</b>입니다. AB의 수직 이등분선 위에서는 A·B까지가 같고, BC의 수직 이등분선 위에서는 B·C까지가 같으니, <b>두 선이 만나는 곳</b>이 세 점 모두에서 같은 거리 = 중심입니다.",
+    pts:{A,B,C,O},
+    steps:[
+      {t:"한 직선 위에 있지 않은 <b>세 점 A, B, C</b>입니다. 이 셋을 모두 지나는 원을 그려 봅시다.",
+       d:[Pt(A,"A","given"),Pt(B,"B","given"),Pt(C,"C","given"),L(A,B,"aux"),L(B,C,"aux")]},
+      {t:"<b>선분 AB의 수직 이등분선</b>을 긋습니다. (앞에서 배운 2등분 작도 그대로)",
+       d:[L(b1[0],b1[1],"act")]},
+      {t:"<b>선분 BC의 수직 이등분선</b>도 긋습니다. 두 선이 만나는 점이 <b>중심 O</b>입니다.",
+       d:[L(b2[0],b2[1],"act"),Pt(O,"O")]},
+      {t:"<b>O를 중심, OA를 반지름</b>으로 원을 그리면 세 점을 모두 지납니다.",
+       d:[C_(O,R,"res")], ask:"O", cands:["A","B","C","O"],
+       qt:"두 수직 이등분선을 그어 교점을 얻었습니다. 이제 <b>세 점을 모두 지나는 원</b>을 그리려면 컴퍼스 바늘을 어디에 꽂을까요?"}
+    ]};
+})();
+
+CONS.ellipse=(()=>{
+  const O=[200,125], a=140, b=78, N=12;
+  const A1=[O[0]-a,O[1]], A2=[O[0]+a,O[1]], B1=[O[0],O[1]-b], B2=[O[0],O[1]+b];
+  const big=[],sml=[],pts=[];
+  for(let i=0;i<N;i++){
+    const t=i*2*Math.PI/N;
+    big.push(ptAt(O,a,t)); sml.push(ptAt(O,b,t));
+    pts.push([O[0]+a*Math.cos(t), O[1]+b*Math.sin(t)]);
+  }
+  return {name:"장축·단축이 주어진 타원 (동심원법)", short:"타원 (동심원법)",
+    why:"<b>왜 되나?</b> 큰 원 등분점에서 <b>세로선</b>, 작은 원 등분점에서 <b>가로선</b>을 그어 만나게 하면, 가로는 장축 비율·세로는 단축 비율이 됩니다. 즉 <b>원을 한 방향으로만 눌러 납작하게</b> 만든 것이 타원입니다. 등분을 12~16으로 늘릴수록 곡선이 매끄러워집니다.",
+    pts:{O,A1,A2,B1,B2},
+    steps:[
+      {t:"주어진 <b>장축(가로)</b>과 <b>단축(세로)</b>입니다. 두 축은 가운데 O에서 직각으로 만납니다.",
+       d:[L(A1,A2,"given"),L(B1,B2,"given"),Pt(O,"O","given"),Pt(A2,"","given"),Pt(B1,"","given")]},
+      {t:"O를 중심으로 <b>장축을 지름으로 하는 큰 원</b>과 <b>단축을 지름으로 하는 작은 원</b>을 그립니다.",
+       d:[C_(O,a,"act"),C_(O,b,"act")], ask:"O", cands:["O","A2","B1"],
+       qt:"동심원법으로 타원을 그리려 합니다. <b>큰 원과 작은 원</b>을 그릴 때 컴퍼스 바늘을 어디에 꽂을까요?"},
+      {t:"두 원의 <b>원주를 12등분</b>하고, 중심에서 등분점으로 선을 그어 둡니다.",
+       d:big.map((p,i)=>L(O,p,"aux")).concat(big.map(p=>Pt(p,""))).concat(sml.map(p=>Pt(p,"")))},
+      {t:"<b>큰 원의 등분점에서는 세로선</b>, <b>작은 원의 등분점에서는 가로선</b>을 그어 만나는 점을 찍습니다.",
+       d:big.map((p,i)=>L(p,[p[0],pts[i][1]],"aux"))
+            .concat(sml.map((p,i)=>L(p,[pts[i][0],p[1]],"aux")))
+            .concat(pts.map(p=>Pt(p,"")))},
+      {t:"그 <b>교점들을 곡선으로 이으면 타원</b>이 완성됩니다.",
+       d:[{k:"E",c:O,a:a,b:b,st:"res"}]}
+    ]};
+})();
+
+const KEYS=["bisect","perp","divide","angle","trisect","hexagon","circum","ellipse"];
+
+/* ================= 그리기 ================= */
+const STYLE={
+  given:{s:"#1c3247",w:2.2,d:null},
+  aux  :{s:"#8fb3cf",w:1.1,d:[4,3]},
+  act  :{s:"#c1622a",w:2.0,d:null},
+  res  :{s:"#1a7f3c",w:2.6,d:null},
+  dim  :{s:"#b9c4cf",w:1.1,d:null}
+};
+let VIEW={sx:1,ox:0,oy:0};
+function setup(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||600, h=parseFloat(getComputedStyle(cv).height)||260;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h);
+  const s=Math.min(w/VW,h/VH)*0.94;
+  const v={sx:s, ox:(w-VW*s)/2, oy:(h-VH*s)/2};
+  return {g,w,h,v};
+}
+const TX=(p,v)=>[p[0]*v.sx+v.ox, p[1]*v.sx+v.oy];
+function drawPrims(g,v,list,fade){
+  list.forEach(o=>{
+    const st=STYLE[o.st==="pt"?"act":o.st]||STYLE.aux;
+    g.save();
+    g.strokeStyle=fade?STYLE.dim.s:st.s; g.lineWidth=(fade?1:st.w);
+    if(st.d) g.setLineDash(st.d.map(x=>x));
+    if(o.k==="L"){ const a=TX(o.a,v), b=TX(o.b,v);
+      g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke(); }
+    else if(o.k==="A"){ const c=TX(o.c,v);
+      g.beginPath(); g.arc(c[0],c[1],o.r*v.sx,o.a0,o.a1); g.stroke(); }
+    else if(o.k==="C"){ const c=TX(o.c,v);
+      g.beginPath(); g.arc(c[0],c[1],o.r*v.sx,0,2*Math.PI); g.stroke(); }
+    else if(o.k==="E"){ const c=TX(o.c,v);
+      g.beginPath(); g.ellipse(c[0],c[1],o.a*v.sx,o.b*v.sx,0,0,2*Math.PI); g.stroke(); }
+    else if(o.k==="P"){ const p=TX(o.p,v);
+      g.fillStyle=fade?STYLE.dim.s:(o.st==="given"?"#1c3247":o.st==="res"?"#1a7f3c":"#c1622a");
+      g.beginPath(); g.arc(p[0],p[1],o.lab?4.2:3,0,2*Math.PI); g.fill();
+      if(o.lab && !fade){ g.font="700 12px 'Malgun Gothic',sans-serif"; g.textAlign="center";
+        g.fillText(o.lab,p[0],p[1]-9); } }
+    g.restore();
+  });
+}
+function drawCons(cv,key,upto,opt){
+  opt=opt||{};
+  const {g,w,h,v}=setup(cv); VIEW=v;
+  const C=CONS[key];
+  for(let i=0;i<=upto && i<C.steps.length;i++)
+    drawPrims(g,v,C.steps[i].d, opt.fadePast && i<upto);
+  if(opt.cands){
+    opt.cands.forEach(lab=>{
+      const p=TX(C.pts[lab],v);
+      g.save();
+      g.fillStyle=opt.picked===lab?"#c1622a":"#2f7fb5";
+      g.strokeStyle="#ffffff"; g.lineWidth=2;
+      g.beginPath(); g.arc(p[0],p[1],opt.picked===lab?13:11,0,2*Math.PI); g.fill(); g.stroke();
+      g.fillStyle="#fff"; g.font="800 12px 'Malgun Gothic',sans-serif";
+      g.textAlign="center"; g.textBaseline="middle"; g.fillText(lab,p[0],p[1]);
+      if(opt.mark && opt.mark[lab]){
+        g.strokeStyle=opt.mark[lab]==="o"?"#1a7f3c":"#d0342c"; g.lineWidth=3;
+        g.beginPath(); g.arc(p[0],p[1],17,0,2*Math.PI); g.stroke();
+      }
+      g.restore();
+    });
+  }
+  return v;
+}
+function hitCand(cv,key,cands,ev){
+  const r=cv.getBoundingClientRect();
+  const x=(ev.clientX-r.left), y=(ev.clientY-r.top);
+  let best=null,bd=1e9;
+  cands.forEach(lab=>{
+    const p=TX(CONS[key].pts[lab],VIEW), d=Math.hypot(p[0]-x,p[1]-y);
+    if(d<bd){bd=d;best=lab;}
+  });
+  return bd<=26?best:null;
+}
+
+/* ================= 배우기 ================= */
+let curKey="bisect", curStep=0, autoTimer=null, autoGuard=null;
+const LKEY="learned_basic_cons";
+let doneSet=new Set();
+try{ doneSet=new Set(JSON.parse(localStorage.getItem(LKEY)||"[]")); }catch(e){}
+function saveDone(){ try{ localStorage.setItem(LKEY,JSON.stringify([...doneSet])); }catch(e){}
+  if(doneSet.size>=KEYS.length) el("dLearn").classList.remove("hidden"); }
+if(doneSet.size>=KEYS.length) el("dLearn").classList.remove("hidden");
+
+function renderSeg(){
+  el("consSeg").innerHTML=KEYS.map(k=>
+    '<button class="segBtn" type="button" data-k="'+k+'" aria-pressed="'+(k===curKey)+'">'+
+    CONS[k].short+(doneSet.has(k)?' <span class="ok">✓</span>':'')+'</button>').join("");
+}
+el("consSeg").addEventListener("click",e=>{
+  const b=e.target.closest(".segBtn"); if(!b) return;
+  stopAuto(); curKey=b.dataset.k; curStep=0; renderSeg(); renderCons();
+});
+function renderCons(){
+  const C=CONS[curKey];
+  drawCons(el("consCv"),curKey,curStep);
+  el("stepChips").innerHTML=C.steps.map((s,i)=>
+    '<button class="stepChip '+(i===curStep?"on":(i<curStep?"past":""))+'" type="button" data-i="'+i+'">'+
+    "❶❷❸❹❺❻"[i]+'</button>').join("");
+  el("stepText").innerHTML=C.steps[curStep].t;
+  el("consWhy").innerHTML=curStep>=C.steps.length-1?C.why:"";
+  el("btnBack").disabled=curStep===0;
+  el("btnFwd").disabled=curStep>=C.steps.length-1;
+  if(curStep>=C.steps.length-1 && !doneSet.has(curKey)){
+    doneSet.add(curKey); saveDone(); renderSeg();
+    fxBanner({icon:"✏️",title:CONS[curKey].name,sub:"작도 완성!",stars:3});
+  }
+}
+el("stepChips").addEventListener("click",e=>{
+  const b=e.target.closest(".stepChip"); if(!b) return;
+  stopAuto(); curStep=+b.dataset.i; renderCons();
+});
+el("btnFwd").onclick=()=>{ stopAuto(); if(curStep<CONS[curKey].steps.length-1){curStep++;renderCons();fxRight(el("btnFwd"));} };
+el("btnBack").onclick=()=>{ stopAuto(); if(curStep>0){curStep--;renderCons();} };
+function stopAuto(){ if(autoTimer){clearTimeout(autoTimer);autoTimer=null;} if(autoGuard){clearTimeout(autoGuard);autoGuard=null;}
+  el("btnAuto").textContent="▶ 자동으로 그리기"; }
+el("btnAuto").onclick=()=>{
+  if(autoTimer){ stopAuto(); return; }
+  curStep=0; renderCons(); el("btnAuto").textContent="⏸ 멈추기";
+  (function tick(){
+    autoTimer=setTimeout(()=>{
+      if(curStep<CONS[curKey].steps.length-1){
+        curStep++; renderCons();
+        if(curStep<CONS[curKey].steps.length-1) tick(); else stopAuto();   // 마지막 장면에서 바로 종료
+      } else stopAuto();
+    },1100);
+  })();
+};
+
+/* ================= 문제 ================= */
+const qPrompt=el("qPrompt"), qChoices=el("qChoices"), qCv=el("qCv"), qToast=el("qToast"),
+      qExplain=el("qExplain"), btnSubmit=el("btnSubmit"), btnNext=el("btnNext"), qHint=el("qHint");
+let quiz=null;
+
+// ① 컴퍼스 놓기 — 캔버스의 파란 점을 직접 클릭
+function qCompass(){
+  const key=pick(KEYS.filter(k=>CONS[k].steps.some(s=>s.ask)));
+  const C=CONS[key];
+  const idx=pick(C.steps.map((s,i)=>s.ask?i:-1).filter(i=>i>=0));
+  const st=C.steps[idx];
+  return {kind:"canvas", key, upto:idx-1, cands:shuffle(st.cands.slice()), answer:st.ask,
+    prompt:"<b>"+C.name+"</b><br>"+st.qt,          // qt = 정답 점 이름이 나오지 않는 문제 문구
+    explain:"정답은 <b>"+st.ask+"</b>. "+st.t+"<br>"+C.why};
+}
+// ② 다음 단계 — 그림은 k단계까지, 다음에 할 일을 고르기
+function qOrder(){
+  const key=pick(KEYS), C=CONS[key];
+  const idx=1+rnd(C.steps.length-1);
+  const strip=s=>s.replace(/<[^>]+>/g,"");
+  const wrongs=[];
+  while(wrongs.length<3){
+    const k2=pick(KEYS), s2=pick(CONS[k2].steps);
+    const t=strip(s2.t);
+    if(t!==strip(C.steps[idx].t) && !wrongs.includes(t)) wrongs.push(t);
+  }
+  const opts=shuffle([strip(C.steps[idx].t),...wrongs]);
+  return {kind:"text", key, upto:idx-1, opts, answer:opts.indexOf(strip(C.steps[idx].t)),
+    prompt:"<b>"+C.name+"</b> 작도를 여기까지 했습니다.<br><b>바로 다음에 할 일</b>은?",
+    explain:"다음 단계는 "+C.steps[idx].t+"<br>"+C.why};
+}
+// ③ 무슨 작도인가 — 완성된 그림 보고 이름 고르기
+function qName(){
+  const key=pick(KEYS), C=CONS[key];
+  const wrongs=shuffle(KEYS.filter(k=>k!==key)).slice(0,3).map(k=>CONS[k].name);
+  const opts=shuffle([C.name,...wrongs]);
+  return {kind:"text", key, upto:C.steps.length-1, opts, answer:opts.indexOf(C.name),
+    prompt:"이 그림은 <b>무엇을 작도</b>한 것일까요?",
+    explain:"<b>"+C.name+"</b> 입니다.<br>"+C.why};
+}
+// ④ 개념 (원리)
+function qConcept(){
+  const Q=[
+    {p:"선분의 <b>수직 이등분선</b>을 작도할 때, 컴퍼스 반지름을 어떻게 잡아야 하는가?",
+     o:["선분 길이의 절반보다 크게","선분 길이의 절반보다 작게","선분 길이와 똑같이","아무 값이나 상관없다"],a:0,
+     e:"절반보다 작으면 두 원호가 <b>만나지 않아</b> 교점이 생기지 않습니다. 절반보다 크기만 하면 값은 자유입니다."},
+    {p:"수직 이등분선 위의 점이 가지는 성질은?",
+     o:["선분의 두 끝점에서 거리가 같다","선분의 한쪽 끝점에서만 가깝다","항상 선분의 중점이다","선분과 평행하다"],a:0,
+     e:"두 끝점에서 <b>거리가 같은 점들의 모임</b>이 수직 이등분선입니다. 그래서 세 점을 지나는 원의 중심도 이 방법으로 찾습니다."},
+    {p:"자와 컴퍼스만으로 <b>3등분할 수 없는</b> 것은?",
+     o:["임의의 각","직각","선분","직각의 절반(45°)"],a:0,
+     e:"<b>임의의 각의 3등분은 불가능</b>합니다. 다만 <b>직각</b>은 반지름과 같은 현이 60°를 만드는 성질로 30°씩 나눌 수 있고, <b>선분</b>은 평행선 비례로 몇 등분이든 가능합니다."},
+    {p:"원 위에서 <b>반지름과 같은 길이의 현</b>이 만드는 중심각은?",
+     o:["60°","30°","45°","90°"],a:0,
+     e:"반지름 두 개와 현이 <b>정삼각형</b>을 이루므로 <b>60°</b>. 이 성질이 정육각형 작도와 직각 3등분의 근거입니다."},
+    {p:"<b>정육각형</b>의 한 변의 길이와 외접원 반지름의 관계는?",
+     o:["한 변 = 반지름","한 변 = 반지름의 2배","한 변 = 반지름의 절반","한 변 = 반지름 × √2"],a:0,
+     e:"<b>한 변 = 반지름</b>. 그래서 컴퍼스를 반지름 그대로 두고 원둘레를 여섯 번 찍으면 정육각형이 됩니다(육각 볼트머리 작도)."},
+    {p:"선분을 <b>5등분</b>할 때 보조선을 쓰는 이유는?",
+     o:["평행선이 두 직선을 같은 비로 자르는 성질을 이용하려고","보조선이 더 길어서","각도를 재기 편해서","컴퍼스를 쓰지 않으려고"],a:0,
+     e:"<b>평행선 비례</b>입니다. 보조선의 등분 간격은 아무 값이나 되고, 보조선의 각도도 상관없습니다."},
+    {p:"세 점을 지나는 원의 <b>중심</b>을 찾는 방법은?",
+     o:["두 선분의 수직 이등분선의 교점","세 점을 이은 삼각형의 무게중심","가장 긴 변의 중점","세 각의 이등분선의 교점"],a:0,
+     e:"중심은 세 점에서 <b>거리가 같은 점</b>이므로 두 수직 이등분선의 교점입니다. (세 각의 이등분선 교점은 <b>내접원</b>의 중심)"},
+    {p:"동심원법으로 <b>타원</b>을 그릴 때 큰 원과 작은 원의 지름은?",
+     o:["큰 원 = 장축, 작은 원 = 단축","큰 원 = 단축, 작은 원 = 장축","둘 다 장축","둘 다 단축"],a:0,
+     e:"큰 원의 등분점에서 <b>세로선</b>, 작은 원의 등분점에서 <b>가로선</b>을 그어 만난 점들이 타원 위의 점입니다."},
+    {p:"각의 2등분 작도에서 <b>두 원호의 반지름</b>은?",
+     o:["서로 같아야 한다","서로 달라야 한다","한쪽이 두 배여야 한다","각의 크기에 따라 정해진다"],a:0,
+     e:"두 변 위의 점에서 <b>같은 반지름</b>으로 그려야 교점이 각의 정중앙에 생깁니다. 반지름 값 자체는 자유입니다."},
+    {p:"작도에서 사용한 <b>보조선</b>은 도면에서 어떻게 하는가?",
+     o:["가는 선으로 남겨 두거나 지운다","굵은 실선으로 강조한다","외형선과 같게 그린다","2점 쇄선으로 바꾼다"],a:0,
+     e:"보조선은 결과를 얻기 위한 과정이므로 <b>가는 선</b>으로 얇게 남기고, 결과 도형만 <b>굵은 실선(외형선)</b>으로 그립니다."}
+  ];
+  const q=pick(Q); const idx=q.o.map((t,i)=>i); shuffle(idx);
+  return {kind:"text", key:pick(KEYS), upto:0, opts:idx.map(i=>q.o[i]), answer:idx.indexOf(q.a),
+    prompt:q.p, explain:q.e, noPic:true};
+}
+
+const GEN={
+  compass:qCompass, order:qOrder, name:qName,
+  exam:()=>pick([qCompass,qCompass,qOrder,qName,qConcept,qConcept])()
+};
+
+function renderQ(){
+  const q=quiz.q;
+  qPrompt.innerHTML=q.prompt;
+  qCv.parentElement.classList.toggle("hidden",!!q.noPic);
+  if(!q.noPic) drawCons(qCv,q.key,q.upto,{cands:q.kind==="canvas"?q.cands:null});
+  qHint.classList.toggle("hidden",q.kind!=="canvas");
+  qChoices.innerHTML="";
+  if(q.kind==="text"){
+    qChoices.classList.toggle("one", q.opts.some(t=>t.length>24));
+    q.opts.forEach((t,i)=>{
+      const b=document.createElement("button");
+      b.className="choice"; b.type="button";
+      b.innerHTML='<span class="num">'+"①②③④"[i]+'</span><span class="tx">'+t+'</span>';
+      b.onclick=()=>{ if(quiz.answered) return; quiz.sel=i; btnSubmit.disabled=false;
+        qChoices.querySelectorAll(".choice").forEach(x=>x.classList.toggle("sel",x===b)); };
+      qChoices.appendChild(b);
+    });
+  }
+  const old=el("rcBtn"); if(old) old.remove();
+  quiz.answered=false; quiz.sel=null;
+  btnSubmit.disabled=true; btnSubmit.classList.remove("hidden");
+  btnNext.classList.add("hidden"); qExplain.classList.add("hidden");
+  qToast.className="toast go";
+  qToast.innerHTML=q.kind==="canvas"?"그림에서 <b>파란 점</b>을 눌러 고르세요."
+                                    :"보기를 고른 뒤 <b>제출</b>을 누르세요.";
+  el("qRound").textContent=quiz.round; el("qTotal").textContent=quiz.total;
+  el("qScore").textContent=quiz.score; el("qCombo").textContent="연속 "+quiz.combo;
+}
+qCv.addEventListener("click",e=>{
+  if(!quiz||!quiz.q||quiz.q.kind!=="canvas"||quiz.answered) return;
+  const lab=hitCand(qCv,quiz.q.key,quiz.q.cands,e);
+  if(!lab) return;
+  quiz.sel=lab; btnSubmit.disabled=false;
+  drawCons(qCv,quiz.q.key,quiz.q.upto,{cands:quiz.q.cands,picked:lab});
+});
+function submitQ(){
+  if(quiz.answered||quiz.sel==null) return;
+  quiz.answered=true;
+  const q=quiz.q, ok=(q.kind==="canvas")?(quiz.sel===q.answer):(quiz.sel===q.answer);
+  if(ok){quiz.score++;quiz.combo++;quiz.best=Math.max(quiz.best,quiz.combo);}
+  else {quiz.combo=0; quiz.wrong.push(quiz.round);}
+  if(q.kind==="canvas"){
+    const mark={}; mark[q.answer]="o"; if(!ok) mark[quiz.sel]="x";
+    drawCons(qCv,q.key,q.upto,{cands:q.cands,picked:quiz.sel,mark});
+    ok?fxRight(qCv):fxWrong(qCv);
+  }else{
+    const btns=qChoices.querySelectorAll(".choice");
+    btns.forEach((b,i)=>{ b.disabled=true; b.classList.remove("sel");
+      if(i===q.answer) b.classList.add("correct"); else if(i===quiz.sel) b.classList.add("wrong"); });
+    ok?fxRight(btns[quiz.sel]):fxWrong(btns[quiz.sel]);
+    if(!q.noPic) drawCons(qCv,q.key,q.kind==="text"&&q.upto<CONS[q.key].steps.length-1?q.upto+1:q.upto,{});
+  }
+  el("qScore").textContent=quiz.score; el("qCombo").textContent="연속 "+quiz.combo;
+  qToast.className="toast "+(ok?"ok":"no");
+  qToast.textContent=ok?(quiz.combo>=3?"정답! "+quiz.combo+"연속 🔥":"정답이에요!")
+                       :"아쉬워요. 정답은 "+(q.kind==="canvas"?q.answer+" 점":"①②③④"[q.answer]+"번")+"입니다.";
+  qExplain.innerHTML=q.explain; qExplain.classList.remove("hidden");
+  btnSubmit.classList.add("hidden"); btnNext.classList.remove("hidden");
+  btnNext.textContent = quiz.round>=quiz.total?"결과 보기 →":"다음 문제 →";
+}
+function startQuiz(type,total){
+  quiz={type,total:total||8,round:1,score:0,combo:0,best:0,answered:false,sel:null,
+        q:null,wrong:[],started:Date.now()};
+  quiz.q=GEN[type](); renderQ();
+}
+btnSubmit.onclick=submitQ;
+btnNext.onclick=()=>{ if(quiz.round>=quiz.total){finish();return;} quiz.round++; quiz.q=GEN[quiz.type](); renderQ(); };
+el("btnRestart").onclick=()=>startQuiz(quiz.type,quiz.total);
+
+function finish(){
+  const pct=Math.round(quiz.score/quiz.total*100), sec=Math.round((Date.now()-quiz.started)/1000);
+  qCv.parentElement.classList.add("hidden"); qHint.classList.add("hidden"); qChoices.innerHTML="";
+  qPrompt.innerHTML="🎉 <b>"+quiz.total+"문제 완료!</b>";
+  qToast.className="toast "+(pct>=80?"ok":pct>=60?"go":"no");
+  qToast.textContent=pct+"점 · "+quiz.score+"/"+quiz.total+" 정답 · 최고 "+quiz.best+"연속 · "+sec+"초";
+  qExplain.classList.remove("hidden");
+  qExplain.innerHTML= pct>=80?"훌륭합니다! 원호의 교점으로 정확한 점을 찾는 원리를 이해했습니다."
+    : pct>=60?"좋아요. <b>📖 배우기</b>에서 <b>▶ 자동으로 그리기</b>로 한 번씩 더 돌려 보세요."
+    : "<b>📖 배우기</b>로 돌아가 8가지를 단계별로 한 번씩만 넘겨 보세요. ‘같은 반지름으로 두 번 그린다’가 거의 모든 작도의 공통 열쇠입니다.";
+  btnSubmit.classList.add("hidden"); btnNext.classList.add("hidden");
+  fxBanner({icon:pct>=80?"🏆":"💪", title:pct+"점!",
+            sub:quiz.score+" / "+quiz.total+" 정답 · "+sec+"초", stars:fxStars(quiz.total-quiz.score)});
+  const old=el("rcBtn"); if(old) old.remove();
+  if(window.ResultCollector && quiz.type==="exam"){
+    const endpoint=ResultCollector.config && ResultCollector.config.endpoint;
+    if(endpoint){
+      const btn=document.createElement("button");
+      btn.id="rcBtn"; btn.className="btn"; btn.style.marginTop="12px";
+      btn.textContent="🧑‍🏫 선생님께 결과 제출";
+      btn.onclick=()=>{ try{ ResultCollector.open({score:pct,correct:quiz.score,total:quiz.total,
+        wrong:quiz.wrong,durationSec:sec}); }catch(e){} };
+      qExplain.after(btn);
+    }
+  }
+}
+
+/* ================= 탭 ================= */
+const TABS={tabLearn:null, tabCompass:"compass", tabOrder:"order", tabName:"name", tabExam:"exam"};
+function showTab(id){
+  Object.keys(TABS).forEach(t=>el(t).setAttribute("aria-pressed",t===id));
+  const isLearn=id==="tabLearn";
+  stopAuto();
+  el("secLearn").classList.toggle("hidden",!isLearn);
+  el("secQuiz").classList.toggle("hidden",isLearn);
+  if(isLearn){ renderSeg(); renderCons(); }
+  else startQuiz(TABS[id], id==="tabExam"?10:8);
+}
+Object.keys(TABS).forEach(t=>el(t).onclick=()=>showTab(t));
+window.addEventListener("resize",()=>{
+  if(!el("secLearn").classList.contains("hidden")) renderCons();
+  else if(quiz&&quiz.q&&!quiz.q.noPic)
+    drawCons(qCv,quiz.q.key,quiz.q.upto,{cands:quiz.q.kind==="canvas"?quiz.q.cands:null,picked:quiz.sel});
+});
+
+renderSeg(); renderCons();
+})();
+</script>
+</body>
+</html>
