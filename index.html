@@ -104,7 +104,7 @@
 <div class="wrap">
   <div class="eyebrow">Geometric Construction · 기본 도법</div>
   <h1>기본 도법 작도 트레이너</h1>
-  <p class="subtitle">자와 컴퍼스만으로 그리는 <b>평면 도형 작도</b>입니다. 눈금으로 재지 않고 <b>원호의 교점</b>으로 정확한 점을 찾아냅니다. 8가지를 단계별로 보고, 직접 컴퍼스를 놓아 봅니다.</p>
+  <p class="subtitle">자와 컴퍼스만으로 그리는 <b>평면 도형 작도</b>입니다. 눈금으로 재지 않고 <b>원호의 교점</b>으로 정확한 점을 찾아냅니다. 9가지를 단계별로 보고, 직접 컴퍼스를 놓아 봅니다.</p>
 
   <div class="tabs" role="group" aria-label="모드 선택">
     <button class="tab" id="tabLearn" aria-pressed="true">📖 배우기 <span class="done hidden" id="dLearn">✓</span></button>
@@ -430,6 +430,41 @@ CONS.hexagon=(()=>{
     ]};
 })();
 
+CONS.pentagon=(()=>{
+  /* 원에 내접하는 정오각형 — 기초제도 Ⅲ-1 교과서 순서 그대로.
+     반지름 AO의 이등분점 D → 원호 DC 로 OB 위의 점 E → 원호 CE 로 원 위의 점 F.
+     이때 선분 CF 가 정오각형의 한 변이 된다. (실제로 CF = 2r·sin36°) */
+  const O=[200,128], r=98;
+  const A=ptAt(O,r,Math.PI), B=ptAt(O,r,0), C=ptAt(O,r,-Math.PI/2);
+  const D=mid(O,A);
+  const rDC=dist(D,C);
+  const E=[O[0]+(rDC-dist(D,O)),O[1]];          // 반지름 OB 위의 점
+  const side=dist(C,E);
+  const V=[0,1,2,3,4].map(i=>ptAt(O,r,-Math.PI/2+i*2*Math.PI/5));
+  const F=V[1];                                  // C 에서 한 변만큼 떨어진 원 위의 점
+  return {name:"원에 내접하는 정오각형", short:"정오각형",
+    why:"<b>왜 되나?</b> 정오각형은 정육각형처럼 <b>반지름으로 바로 찍을 수 없습니다</b>(한 변 ≠ 반지름). "
+       +"그래서 <b>반지름의 절반</b>을 이용해 한 변의 길이를 먼저 만들어 냅니다. "
+       +"이렇게 얻은 선분 <b>CF</b>가 정확히 한 변(2r·sin36°)이 되어, 그 길이로 원둘레를 찍어 나가면 다섯 번에 닫힙니다.",
+    pts:{O,A,B,C,D,E,F},
+    steps:[
+      {t:"주어진 <b>원</b>과 <b>지름 AB</b>, 그리고 위쪽 <b>반지름 OC</b>입니다.",
+       d:[C_(O,r,"given"),L(A,B,"given"),L(O,C,"given"),
+          Pt(O,"O","given"),Pt(A,"A","given"),Pt(B,"B","given"),Pt(C,"C","given")]},
+      {t:"반지름 <b>AO의 이등분점 D</b>를 잡습니다.",
+       d:[Pt(D,"D","act")], ask:"D", cands:["O","A","D"],
+       qt:"먼저 <b>반지름 AO의 한가운데</b>를 잡아야 합니다. 어느 점일까요?"},
+      {t:"<b>점 D</b>에 컴퍼스를 꽂고 <b>DC</b>를 반지름으로 원호를 그려, 반지름 <b>OB</b>와 만나는 점 <b>E</b>를 구합니다.",
+       d:[A_(arcSpan(D,rDC,C,E,0.12),"act"),Pt(E,"E","act")], ask:"D", cands:["D","O","C"],
+       qt:"<b>DC</b>를 반지름으로 원호를 그리려면 컴퍼스를 어디에 꽂을까요?"},
+      {t:"<b>점 C</b>에 꽂고 <b>CE</b>를 반지름으로 원호를 그려 원과 만나는 점 <b>F</b>를 구하면, <b>선분 CF가 한 변</b>입니다.",
+       d:[L(C,E,"aux"),A_(arcSpan(C,side,E,F,0.12),"act"),Pt(F,"F","act")], ask:"C", cands:["C","E","O"],
+       qt:"<b>CE</b>를 반지름으로 원호를 그리려면 컴퍼스를 어디에 꽂을까요?"},
+      {t:"컴퍼스를 <b>CF 길이 그대로</b> 두고 원둘레를 차례로 찍어 다섯 점을 만든 뒤 이으면 <b>정오각형</b>입니다.",
+       d:V.map((q,i)=>L(q,V[(i+1)%5],"res"))}
+    ]};
+})();
+
 CONS.circum=(()=>{
   const A=[75,185], B=[325,200], C=[190,50];
   const mAB=mid(A,B), mBC=mid(B,C);
@@ -482,7 +517,7 @@ CONS.ellipse=(()=>{
     ]};
 })();
 
-const KEYS=["bisect","perp","divide","angle","trisect","hexagon","circum","ellipse"];
+const KEYS=["bisect","perp","divide","angle","trisect","hexagon","pentagon","circum","ellipse"];
 
 /* ================= 그리기 ================= */
 const STYLE={
@@ -900,7 +935,7 @@ function finish(){
   qExplain.classList.remove("hidden");
   qExplain.innerHTML= pct>=80?"훌륭합니다! 원호의 교점으로 정확한 점을 찾는 원리를 이해했습니다."
     : pct>=60?"좋아요. <b>📖 배우기</b>에서 <b>▶ 자동으로 그리기</b>로 한 번씩 더 돌려 보세요."
-    : "<b>📖 배우기</b>로 돌아가 8가지를 단계별로 한 번씩만 넘겨 보세요. ‘같은 반지름으로 두 번 그린다’가 거의 모든 작도의 공통 열쇠입니다.";
+    : "<b>📖 배우기</b>로 돌아가 9가지를 단계별로 한 번씩만 넘겨 보세요. ‘같은 반지름으로 두 번 그린다’가 거의 모든 작도의 공통 열쇠입니다.";
   btnSubmit.classList.add("hidden"); btnNext.classList.add("hidden");
   fxBanner({icon:pct>=80?"🏆":"💪", title:pct+"점!",
             sub:quiz.score+" / "+quiz.total+" 정답 · "+sec+"초", stars:fxStars(quiz.total-quiz.score)});
