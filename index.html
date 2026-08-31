@@ -694,14 +694,20 @@ function qOrder(){
   const key=pick(KEYS), C=CONS[key];
   const idx=1+rnd(C.steps.length-1);
   const strip=s=>s.replace(/<[^>]+>/g,"");
+  /* 오답을 아무 작도에서나 뽑으면, 발문에 나온 작도 이름과 같은 문장만 고르면 그림을 안 봐도 맞는다.
+     그래서 오답 2개는 '같은 작도의 다른 단계'에서 먼저 뽑는다 — 그림을 봐야 순서를 알 수 있다. */
+  const answer=strip(C.steps[idx].t);
   const wrongs=[];
-  while(wrongs.length<3){
+  const sameSteps=shuffle(C.steps.map(s2=>strip(s2.t)).filter(t=>t!==answer));
+  for(const t of sameSteps){ if(wrongs.length>=2) break; if(!wrongs.includes(t)) wrongs.push(t); }
+  let guard=0;
+  while(wrongs.length<3 && guard++<400){
     const k2=pick(KEYS), s2=pick(CONS[k2].steps);
     const t=strip(s2.t);
-    if(t!==strip(C.steps[idx].t) && !wrongs.includes(t)) wrongs.push(t);
+    if(t!==answer && !wrongs.includes(t)) wrongs.push(t);
   }
-  const opts=shuffle([strip(C.steps[idx].t),...wrongs]);
-  return {kind:"text", key, upto:idx-1, opts, answer:opts.indexOf(strip(C.steps[idx].t)),
+  const opts=shuffle([answer,...wrongs]);
+  return {kind:"text", key, upto:idx-1, opts, answer:opts.indexOf(answer),
     prompt:"<b>"+C.name+"</b> 작도를 여기까지 했습니다.<br><b>바로 다음에 할 일</b>은?",
     explain:"다음 단계는 "+C.steps[idx].t+"<br>"+C.why};
 }
